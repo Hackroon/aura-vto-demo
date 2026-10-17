@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aura — The Story: Problem & Solution</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <style>
+      :root {
+        --cinema-bg: #090a09;
+        --cinema-accent: #2de287;
+        --cinema-gold: #e5b95a;
+      }
+      body {
+        background-color: var(--cinema-bg);
+        color: #f0f2f0;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .story-page {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 3rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .story-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.25rem;
+      }
+      .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #9aa39c;
+        text-decoration: none;
+        font-size: 0.9rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.2s ease;
+      }
+      .back-btn:hover {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.25);
+      }
+      .video-wrapper {
+        position: relative;
+        width: 100%;
+        background: #000;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px rgba(45, 226, 135, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        aspect-ratio: 16 / 9;
+      }
+      #storyCanvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .video-overlay-play {
+        position: absolute;
+        inset: 0;
+        background: rgba(9, 10, 9, 0.55);
+        backdrop-filter: blur(4px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: opacity 0.3s ease;
+      }
+      .play-circle {
+        width: 84px;
+        height: 84px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2de287, #139352);
+        color: #05160c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.2rem;
+        box-shadow: 0 10px 30px rgba(45, 226, 135, 0.4);
+        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      .video-overlay-play:hover .play-circle {
+        transform: scale(1.1);
+      }
+      .play-prompt {
+        margin-top: 1.2rem;
+        font-size: 1.25rem;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+      }
+      .play-subprompt {
+        margin-top: 0.35rem;
+        font-size: 0.9rem;
+        color: #c4cdc6;
+      }
+      .controls-bar {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1.2rem;
+        background: rgba(18, 21, 19, 0.92);
+        backdrop-filter: blur(12px);
+        border-radius: 12px;
+        margin-top: 0.75rem;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .ctrl-btn {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #f0f2f0;
+        border-radius: 8px;
+        padding: 0.45rem 0.85rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s;
+        font-family: inherit;
+      }
+      .ctrl-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+      .ctrl-btn.active {
+        background: rgba(45, 226, 135, 0.18);
+        border-color: #2de287;
+        color: #2de287;
+      }
+      .progress-container {
+        flex: 1;
+        position: relative;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 4px;
+        cursor: pointer;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #2de287, #7cf0b4);
+        border-radius: 4px;
+        transition: width 0.08s linear;
+      }
+      .time-display {
+        font-size: 0.82rem;
+        font-variant-numeric: tabular-nums;
+        color: #a4afa6;
+        min-width: 75px;
+        text-align: right;
+      }
+      .story-card-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+        margin-top: 1.75rem;
+      }
+      @media (max-width: 900px) {
+        .story-card-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 540px) {
+        .story-card-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .scene-card {
+        background: rgba(18, 21, 19, 0.6);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 0.75rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+      }
+      .scene-card:hover {
+        background: rgba(25, 30, 26, 0.8);
+        border-color: rgba(45, 226, 135, 0.4);
+        transform: translateY(-2px);
+      }
+      .scene-card.current {
+        border-color: #2de287;
+        box-shadow: 0 0 15px rgba(45, 226, 135, 0.2);
+      }
+      .scene-thumb {
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-bottom: 0.5rem;
+      }
+      .scene-number {
+        font-size: 0.7rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: #2de287;
+        font-weight: 600;
+      }
+      .scene-title {
+        font-size: 0.88rem;
+        font-weight: 600;
+        margin: 0.2rem 0 0.35rem;
+      }
+      .scene-desc {
+        font-size: 0.78rem;
+        color: #9aa39c;
+        line-height: 1.35;
+        margin: 0;
+      }
+      .record-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        color: #ff6b6b;
+        font-size: 0.8rem;
+        font-weight: 600;
+      }
+      .record-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #ff6b6b;
+        animation: pulse 1s infinite alternate;
+      }
+      @keyframes pulse {
+        0% { opacity: 0.4; transform: scale(0.85); }
+        100% { opacity: 1; transform: scale(1.15); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="story-page">
+      <header class="story-header">
+        <a href="/" class="back-btn">
+          <span>← Back to Try-On Studio</span>
+        </a>
+        <div class="brand">
+          <span class="brand-word">aura<span class="brand-period">.</span></span>
+          <span class="brand-subtitle">THE STORY VIDEO</span>
+        </div>
+        <button id="downloadVideoBtn" class="ctrl-btn" title="Export video to .webm file">
+          <span>📥 Export Video (.webm)</span>
+        </button>
+      </header>
+
+      <div class="video-wrapper" id="videoContainer">
+        <canvas id="storyCanvas" width="1920" height="1080"></canvas>
+        <div class="video-overlay-play" id="playOverlay">
+          <div class="play-circle">▶</div>
+          <div class="play-prompt">Watch the Aura Story</div>
+          <div class="play-subprompt">The Problem: Return Fatigue • The Solution: Instant AI Fitting</div>
+        </div>
+      </div>
+
+      <div class="controls-bar">
+        <button id="playPauseBtn" class="ctrl-btn">
+          <span id="playPauseIcon">▶</span>
+          <span id="playPauseLabel">Play</span>
+        </button>
+        <div class="progress-container" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="time-display" id="timeDisplay">0:00 / 0:36</div>
+        <button id="audioToggleBtn" class="ctrl-btn active" title="Toggle Synthesizer Music">
+          <span>🎵 Music: On</span>
+        </button>
+        <button id="voiceToggleBtn" class="ctrl-btn active" title="Toggle AI Voiceover Narration">
+          <span>🎙️ Voice: On</span>
+        </button>
+        <button id="fullscreenBtn" class="ctrl-btn" title="Toggle Fullscreen">
+          <span>⛶</span>
+        </button>
+      </div>
+
+      <div class="story-card-grid">
+        <div class="scene-card current" data-time="0">
+          <img class="scene-thumb" src="/story-assets/scene1.jpg" alt="Scene 1" />
+          <div class="scene-number">Scene 01 • 0:00</div>
+          <div class="scene-title">The Return Nightmare</div>
+          <p class="scene-desc">Over 40% of online clothes get returned due to sizing mismatch and fit frustration.</p>
+        </div>
+        <div class="scene-card" data-time="9">
+          <img class="scene-thumb" src="/story-assets/scene2.jpg" alt="Scene 2" />
+          <div class="scene-number">Scene 02 • 0:09</div>
+          <div class="scene-title">Checkout Hesitation</div>
+          <p class="scene-desc">Endless scrolling and doubt: "Will this actually look good on my body type?"</p>
+        </div>
+        <div class="scene-card" data-time="18">
+          <img class="scene-thumb" src="/story-assets/scene3.jpg" alt="Scene 3" />
+          <div class="scene-number">Scene 03 • 0:18</div>
+          <div class="scene-title">The Aura AI Solution</div>
+          <p class="scene-desc">Real-time AI mapping drapes garments and jewelry onto your photo in seconds.</p>
+        </div>
+        <div class="scene-card" data-time="27">
+          <img class="scene-thumb" src="/story-assets/scene4.jpg" alt="Scene 4" />
+          <div class="scene-number">Scene 04 • 0:27</div>
+          <div class="scene-title">Real Confidence</div>
+          <p class="scene-desc">Zero returns. Zero guessing. Confident shopping with a look made just for you.</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        const canvas = document.getElementById('storyCanvas');
+        const ctx = canvas.getContext('2d');
+        const playOverlay = document.getElementById('playOverlay');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const playPauseLabel = document.getElementById('playPauseLabel');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const audioToggleBtn = document.getElementById('audioToggleBtn');
+        const voiceToggleBtn = document.getElementById('voiceToggleBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const downloadVideoBtn = document.getElementById('downloadVideoBtn');
+        const videoContainer = document.getElementById('videoContainer');
+        const sceneCards = document.querySelectorAll('.scene-card');
+
+        const DURATION = 36; // total video length in seconds
+        let currentTime = 0;
+        let isPlaying = false;
+        let lastFrameTime = 0;
+        let animationFrameId = null;
+        let audioEnabled = true;
+        let voiceEnabled = true;
+
+        // Scene definitions
+        const scenes = [
+          {
+            id: 1,
+            start: 0,
+            end: 9,
+            src: '/story-assets/scene1.jpg',
+            chapter: 'ACT I: THE PROBLEM',
+            headline: 'The E-Commerce Fit Crisis',
+            narration: 'Online fashion looked effortless, until the boxes arrived. Nearly 40% of apparel bought online ends up returned because it simply doesn\'t look on you like it did on the model.',
+            voiceText: 'Online fashion looked effortless, until the boxes arrived. Nearly 40% of apparel bought online ends up returned because it doesn\'t look on you like it did on the model.',
+            pan: { startScale: 1.0, endScale: 1.15, startX: 0, endX: -40, startY: 0, endY: -20 },
+            spoken: false
+          },
+          {
+            id: 2,
+            start: 9,
+            end: 18,
+            src: '/story-assets/scene2.jpg',
+            chapter: 'ACT II: THE HESITATION',
+            headline: 'Doubt at the Checkout Screen',
+            narration: 'Endless late-night scrolling, full carts, and abandoned orders. Shoppers hesitate because they cannot answer the single most important question: How will this look on ME?',
+            voiceText: 'Endless scrolling and abandoned carts. Shoppers hesitate because they cannot answer the single most important question: How will this look on me?',
+            pan: { startScale: 1.18, endScale: 1.02, startX: 30, endX: 0, startY: -15, endY: 10 },
+            spoken: false
+          },
+          {
+            id: 3,
+            start: 18,
+            end: 27,
+            src: '/story-assets/scene3.jpg',
+            chapter: 'ACT III: THE SOLUTION',
+            headline: 'Aura AI — Instant Fitting Studio',
+            narration: 'Enter Aura. Upload your photo and any piece of clothing or jewelry. Advanced computer vision drapes the fabrics and positions accessories with realistic lighting in seconds.',
+            voiceText: 'Enter Aura. Upload your photo and any clothing or jewelry. Advanced computer vision drapes the fabric and positions accessories with realistic lighting in seconds.',
+            pan: { startScale: 1.02, endScale: 1.16, startX: -20, endX: 20, startY: 10, endY: -10 },
+            spoken: false
+          },
+          {
+            id: 4,
+            start: 27,
+            end: 36,
+            src: '/story-assets/scene4.jpg',
+            chapter: 'ACT IV: THE OUTCOME',
+            headline: 'Fit with Certainty. Zero Remorse.',
+            narration: 'No guesswork. No return piles. Just the confidence of knowing your look matches you before it ever ships. Aura: Virtual fitting, real confidence.',
+            voiceText: 'No guesswork. No return piles. Just the confidence of knowing your look matches you before it ever ships. Aura: Virtual fitting, real confidence.',
+            pan: { startScale: 1.15, endScale: 1.0, startX: 0, endX: 0, startY: -30, endY: 0 },
+            spoken: false
+          }
+        ];
+
+        // Preload images
+        const loadedImages = {};
+        scenes.forEach(s => {
+          const img = new Image();
+          img.src = s.src;
+          loadedImages[s.id] = img;
+        });
+
+        // Web Audio Synthesizer (Ambient Cinematic Music)
+        let audioCtx = null;
+        let ambientGain = null;
+        let musicTimer = null;
+
+        function initAudio() {
+          if (audioCtx) return;
+          try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            audioCtx = new AudioContext();
+            ambientGain = audioCtx.createGain();
+            ambientGain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            ambientGain.connect(audioCtx.destination);
+            scheduleMusicChords();
+          } catch(e) {
+            console.warn('AudioContext not available:', e);
+          }
+        }
+
+        // Chords: Em, C, G, D (Cinematic & inspiring)
+        const chordProgressions = [
+          [164.81, 196.00, 246.94, 329.63], // E minor
+          [130.81, 196.00, 261.63, 329.63], // C major
+          [196.00, 246.94, 293.66, 392.00], // G major
+          [146.83, 220.00, 293.66, 369.99]  // D major
+        ];
+
+        function playPadChord(freqs, duration) {
+          if (!audioCtx || !audioEnabled || audioCtx.state !== 'running') return;
+          freqs.forEach(freq => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+
+            osc.type = 'sawtooth';
+            osc.frequency.value = freq;
+
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(450, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(1100, audioCtx.currentTime + duration * 0.5);
+            filter.frequency.exponentialRampToValueAtTime(450, audioCtx.currentTime + duration);
+
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.045, audioCtx.currentTime + 1.2);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + duration);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(ambientGain);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+          });
+        }
+
+        function scheduleMusicChords() {
+          if (!audioCtx) return;
+          const chordIndex = Math.floor((currentTime % 16) / 4);
+          const chord = chordProgressions[chordIndex % chordProgressions.length];
+          playPadChord(chord, 4.2);
+          musicTimer = setTimeout(scheduleMusicChords, 4000);
+        }
+
+        // Speech Synthesis Narration
+        function speakCurrentScene(scene) {
+          if (!voiceEnabled || !window.speechSynthesis) return;
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(scene.voiceText);
+          utterance.rate = 1.0;
+          utterance.pitch = 1.05;
+          const voices = window.speechSynthesis.getVoices();
+          const warmVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Female') || v.name.includes('Google') || v.name.includes('Samantha')));
+          if (warmVoice) utterance.voice = warmVoice;
+          window.speechSynthesis.speak(utterance);
+        }
+
+        // Draw Frame
+        function draw(t) {
+          const currentSceneIndex = scenes.findIndex(s => t >= s.start && t < s.end);
+          const currentScene = scenes[currentSceneIndex >= 0 ? currentSceneIndex : scenes.length - 1];
+
+          // Voice trigger
+          if (isPlaying && !currentScene.spoken && t >= currentScene.start && t < currentScene.start + 1.5) {
+            currentScene.spoken = true;
+            speakCurrentScene(currentScene);
+          }
+
+          // Clear Canvas
+          ctx.fillStyle = '#050705';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          const img = loadedImages[currentScene.id];
+          if (img && img.complete) {
+            const sceneTime = t - currentScene.start;
+            const sceneDur = currentScene.end - currentScene.start;
+            const progress = Math.min(Math.max(sceneTime / sceneDur, 0), 1);
+
+            // Ken Burns Pan & Zoom calculation
+            const pan = currentScene.pan;
+            const scale = pan.startScale + (pan.endScale - pan.startScale) * progress;
+            const offsetX = pan.startX + (pan.endX - pan.startX) * progress;
+            const offsetY = pan.startY + (pan.endY - pan.startY) * progress;
+
+            ctx.save();
+            ctx.translate(canvas.width / 2 + offsetX, canvas.height / 2 + offsetY);
+            ctx.scale(scale, scale);
+            ctx.drawImage(img, -canvas.width / 2, -canvas.height / 2, canvas.width, canvas.height);
+            ctx.restore();
+
+            // Fade transitions between scenes
+            if (sceneTime < 0.8) {
+              const fade = 1 - (sceneTime / 0.8);
+              ctx.fillStyle = `rgba(5, 7, 5, ${fade * 0.85})`;
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+            } else if (sceneDur - sceneTime < 0.8) {
+              const fade = 1 - ((sceneDur - sceneTime) / 0.8);
+              ctx.fillStyle = `rgba(5, 7, 5, ${fade * 0.85})`;
+              ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+          }
+
+          // Cinematic Letterbox Vignette
+          const gradTop = ctx.createLinearGradient(0, 0, 0, 220);
+          gradTop.addColorStop(0, 'rgba(0,0,0,0.85)');
+          gradTop.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = gradTop;
+          ctx.fillRect(0, 0, canvas.width, 220);
+
+          const gradBottom = ctx.createLinearGradient(0, canvas.height - 340, 0, canvas.height);
+          gradBottom.addColorStop(0, 'rgba(0,0,0,0)');
+          gradBottom.addColorStop(0.4, 'rgba(0,0,0,0.75)');
+          gradBottom.addColorStop(1, 'rgba(0,0,0,0.95)');
+          ctx.fillStyle = gradBottom;
+          ctx.fillRect(0, canvas.height - 340, canvas.width, 340);
+
+          // Top Header Bar
+          ctx.fillStyle = '#2de287';
+          ctx.font = '700 24px -apple-system, sans-serif';
+          ctx.fillText('AURA STUDIOS', 60, 65);
+
+          ctx.fillStyle = '#a4b1a8';
+          ctx.font = '500 20px -apple-system, sans-serif';
+          ctx.fillText('•   VIRTUAL TRY-ON CASE STORY', 245, 65);
+
+          // Top Right Timestamp
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#e5b95a';
+          ctx.font = '600 20px monospace';
+          const sec = Math.floor(t % 60);
+          const min = Math.floor(t / 60);
+          ctx.fillText(`${min}:${sec < 10 ? '0' : ''}${sec} / 0:36`, canvas.width - 60, 65);
+          ctx.textAlign = 'left';
+
+          // Bottom Chapter Badge
+          ctx.fillStyle = '#2de287';
+          ctx.font = '700 18px -apple-system, sans-serif';
+          ctx.fillText(currentScene.chapter, 60, canvas.height - 180);
+
+          // Headline
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '800 48px -apple-system, sans-serif';
+          ctx.fillText(currentScene.headline, 60, canvas.height - 120);
+
+          // Subtitle / Narration Box
+          ctx.fillStyle = '#e0e6e2';
+          ctx.font = '400 26px -apple-system, sans-serif';
+          wrapText(ctx, currentScene.narration, 60, canvas.height - 65, canvas.width - 120, 36);
+
+          // Progress line on canvas bottom
+          ctx.fillStyle = '#2de287';
+          ctx.fillRect(0, canvas.height - 6, (canvas.width * (t / DURATION)), 6);
+        }
+
+        function wrapText(context, text, x, y, maxWidth, lineHeight) {
+          const words = text.split(' ');
+          let line = '';
+          for (let n = 0; n < words.length; n++) {
+            const testLine = line + words[n] + ' ';
+            const metrics = context.measureText(testLine);
+            const testWidth = metrics.width;
+            if (testWidth > maxWidth && n > 0) {
+              context.fillText(line, x, y);
+              line = words[n] + ' ';
+              y += lineHeight;
+            } else {
+              line = testLine;
+            }
+          }
+          context.fillText(line, x, y);
+        }
+
+        // Animation Loop
+        function loop(timestamp) {
+          if (!lastFrameTime) lastFrameTime = timestamp;
+          const delta = (timestamp - lastFrameTime) / 1000;
+          lastFrameTime = timestamp;
+
+          if (isPlaying) {
+            currentTime += delta;
+            if (currentTime >= DURATION) {
+              currentTime = DURATION;
+              pause();
+            }
+            updateUI();
+          }
+
+          draw(currentTime);
+
+          if (isPlaying) {
+            animationFrameId = requestAnimationFrame(loop);
+          }
+        }
+
+        function play() {
+          initAudio();
+          if (audioCtx && audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          isPlaying = true;
+          lastFrameTime = 0;
+          playOverlay.style.display = 'none';
+          playPauseIcon.textContent = '⏸';
+          playPauseLabel.textContent = 'Pause';
+          animationFrameId = requestAnimationFrame(loop);
+        }
+
+        function pause() {
+          isPlaying = false;
+          playPauseIcon.textContent = '▶';
+          playPauseLabel.textContent = 'Play';
+          if (window.speechSynthesis) window.speechSynthesis.cancel();
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        }
+
+        function seek(time) {
+          currentTime = Math.max(0, Math.min(time, DURATION));
+          // reset spoken flag for the target scene
+          const scene = scenes.find(s => currentTime >= s.start && currentTime < s.end);
+          if (scene) scene.spoken = false;
+          updateUI();
+          draw(currentTime);
+        }
+
+        function updateUI() {
+          const pct = (currentTime / DURATION) * 100;
+          progressFill.style.width = pct + '%';
+          const sec = Math.floor(currentTime % 60);
+          const min = Math.floor(currentTime / 60);
+          timeDisplay.textContent = `${min}:${sec < 10 ? '0' : ''}${sec} / 0:36`;
+
+          // Update active card
+          sceneCards.forEach(card => {
+            const startTime = Number(card.dataset.time);
+            if (currentTime >= startTime && currentTime < startTime + 9) {
+              card.classList.add('current');
+            } else {
+              card.classList.remove('current');
+            }
+          });
+        }
+
+        // Event Listeners
+        playOverlay.addEventListener('click', () => {
+          seek(0);
+          scenes.forEach(s => s.spoken = false);
+          play();
+        });
+
+        playPauseBtn.addEventListener('click', () => {
+          if (isPlaying) pause();
+          else {
+            if (currentTime >= DURATION) {
+              seek(0);
+              scenes.forEach(s => s.spoken = false);
+            }
+            play();
+          }
+        });
+
+        progressBar.addEventListener('click', (e) => {
+          const rect = progressBar.getBoundingClientRect();
+          const pos = (e.clientX - rect.left) / rect.width;
+          seek(pos * DURATION);
+        });
+
+        sceneCards.forEach(card => {
+          card.addEventListener('click', () => {
+            const time = Number(card.dataset.time);
+            seek(time);
+            if (!isPlaying) play();
+          });
+        });
+
+        audioToggleBtn.addEventListener('click', () => {
+          audioEnabled = !audioEnabled;
+          audioToggleBtn.classList.toggle('active', audioEnabled);
+          audioToggleBtn.innerHTML = audioEnabled ? '<span>🎵 Music: On</span>' : '<span>🎵 Music: Off</span>';
+          if (ambientGain) {
+            ambientGain.gain.setValueAtTime(audioEnabled ? 0.3 : 0, audioCtx ? audioCtx.currentTime : 0);
+          }
+        });
+
+        voiceToggleBtn.addEventListener('click', () => {
+          voiceEnabled = !voiceEnabled;
+          voiceToggleBtn.classList.toggle('active', voiceEnabled);
+          voiceToggleBtn.innerHTML = voiceEnabled ? '<span>🎙️ Voice: On</span>' : '<span>🎙️ Voice: Off</span>';
+          if (!voiceEnabled && window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+          }
+        });
+
+        fullscreenBtn.addEventListener('click', () => {
+          if (!document.fullscreenElement) {
+            videoContainer.requestFullscreen().catch(err => alert('Fullscreen not supported: ' + err.message));
+          } else {
+            document.exitFullscreen();
+          }
+        });
+
+        // Export Video using MediaRecorder with background-safe timer loop
+        let exportInterval = null;
+        async function startExport(speedMultiplier = 1) {
+          if (!window.MediaRecorder) {
+            alert('Your browser does not support MediaRecorder for video exports.');
+            return;
+          }
+
+          pause();
+          downloadVideoBtn.innerHTML = '<span class="record-badge"><span class="record-dot"></span> Exporting Video...</span>';
+          downloadVideoBtn.disabled = true;
+
+          seek(0);
+          currentTime = 0;
+          scenes.forEach(s => s.spoken = false);
+
+          const stream = canvas.captureStream(30);
+          let mediaRecorder;
+          try {
+            mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+          } catch(e) {
+            try {
+              mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+            } catch(e2) {
+              mediaRecorder = new MediaRecorder(stream);
+            }
+          }
+
+          const recordedChunks = [];
+          mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) recordedChunks.push(e.data);
+          };
+
+          mediaRecorder.onstop = async () => {
+            if (exportInterval) clearInterval(exportInterval);
+            const blob = new Blob(recordedChunks, { type: 'video/webm' });
+            
+            // 1. Post to local server to write Aura-Virtual-TryOn-Story.webm to disk
+            try {
+              const res = await fetch('/api/save-video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'video/webm' },
+                body: blob
+              });
+              const info = await res.json();
+              console.log('[Export Video] Successfully saved to disk:', info);
+            } catch (err) {
+              console.warn('[Export Video] Server save error:', err);
+            }
+
+            // 2. Trigger browser download dialog
+            try {
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.style.display = 'none';
+              a.href = url;
+              a.download = 'Aura-Virtual-TryOn-Story.webm';
+              document.body.appendChild(a);
+              a.click();
+              setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+              }, 100);
+            } catch(e) {}
+
+            downloadVideoBtn.innerHTML = '<span>✓ Saved! Export Again</span>';
+            downloadVideoBtn.disabled = false;
+            window.__exportDone = true;
+          };
+
+          mediaRecorder.start(500);
+          initAudio();
+
+          // High-precision background-safe rendering loop (30 fps)
+          const frameDelta = (1 / 30) * speedMultiplier;
+          const intervalMs = Math.max(10, Math.round(33 / speedMultiplier));
+
+          exportInterval = setInterval(() => {
+            currentTime += frameDelta;
+            if (currentTime >= DURATION) {
+              currentTime = DURATION;
+              clearInterval(exportInterval);
+              draw(currentTime);
+              updateUI();
+              setTimeout(() => {
+                mediaRecorder.stop();
+              }, 300);
+              return;
+            }
+            draw(currentTime);
+            updateUI();
+          }, intervalMs);
+        }
+
+        downloadVideoBtn.addEventListener('click', () => {
+          startExport(1);
+        });
+
+        // Check if autoExport requested via URL
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('autoExport') === '1') {
+          const speed = Number(urlParams.get('speed')) || 1;
+          setTimeout(() => {
+            startExport(speed);
+          }, 800);
+        }
+
+        // Initial render of first frame once images load
+        setTimeout(() => {
+          draw(0);
+        }, 300);
+      })();
+    </script>
+  </body>
+</html>

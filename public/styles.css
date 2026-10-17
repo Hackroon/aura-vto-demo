@@ -57,6 +57,28 @@ button { color: inherit; }
 .docs-link span { margin-left: 4px; color: var(--accent); }
 .docs-link:hover { color: var(--accent); }
 
+.story-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(135deg, rgba(200, 241, 105, 0.16), rgba(45, 226, 135, 0.08));
+  border: 1px solid rgba(200, 241, 105, 0.35);
+  border-radius: 99px;
+  padding: 6px 14px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 15px rgba(200, 241, 105, 0.12);
+}
+.story-pill:hover {
+  background: linear-gradient(135deg, rgba(200, 241, 105, 0.28), rgba(45, 226, 135, 0.16));
+  border-color: var(--accent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(200, 241, 105, 0.22);
+}
+
 main { padding-top: 52px; }
 .intro-row { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin: 0 0 40px; }
 .eyebrow { display: flex; align-items: center; gap: 9px; margin: 0 0 14px; color: var(--accent); font-size: 10px; font-weight: 750; letter-spacing: .16em; }

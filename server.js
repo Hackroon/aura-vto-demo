@@ -3,6 +3,7 @@
 require('dotenv').config();
 
 const crypto = require('node:crypto');
+const fs = require('node:fs');
 const path = require('node:path');
 const { Readable } = require('node:stream');
 const express = require('express');
@@ -403,6 +404,29 @@ app.get('/api/jobs/:jobId/image', async (req, res) => {
     console.error('[aura-vto] result proxy failed', { code: error && error.code ? error.code : error && error.name ? error.name : 'UNKNOWN', message: error && error.message });
     if (!res.headersSent) res.status(502).json({ message: 'Could not load the generated image. Its temporary link may have expired; please try again.' });
     else res.end();
+  }
+});
+
+app.post('/api/save-video', express.raw({ type: '*/*', limit: '150mb' }), (req, res) => {
+  if (!req.body || !req.body.length) {
+    return res.status(400).json({ message: 'No video payload received.' });
+  }
+  const rootVideoPath = path.join(__dirname, 'Aura-Virtual-TryOn-Story.webm');
+  const publicVideoPath = path.join(PUBLIC_DIR, 'Aura-Virtual-TryOn-Story.webm');
+  try {
+    fs.writeFileSync(rootVideoPath, req.body);
+    fs.writeFileSync(publicVideoPath, req.body);
+    console.log(`[aura-vto] video saved successfully (${Math.round(req.body.length / 1024)} KB)`);
+    return res.status(200).json({
+      success: true,
+      message: 'Video exported and saved successfully.',
+      sizeBytes: req.body.length,
+      rootPath: rootVideoPath,
+      publicUrl: '/Aura-Virtual-TryOn-Story.webm',
+    });
+  } catch (error) {
+    console.error('[aura-vto] failed to save video:', error);
+    return res.status(500).json({ message: 'Failed to write video file.' });
   }
 });
 
